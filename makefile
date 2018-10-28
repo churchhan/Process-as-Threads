@@ -1,24 +1,56 @@
-INC_DIR = include
-SRC_DIR = src
+SOURCE_DIR = .
+INCLUDE_DIR = .
 
-SRCS = $(SRC_DIR)/libmythread.cpp $(SRC_DIR)/libfuncs.cpp 
-DEPS = $(SRCS) $(INC_DIR)/hglobal.h $(INC_DIR)/libfuncs.h $(INC_DIR)/xdefines.h
+#SOURCE_DIR = source
+#INCLUDE_DIR = include
 
-INCLUDE_DIRS = -I$(INC_DIR)
+#SRCS_IBS= $(SOURCE_DIR)/IBS/ibsop.c  
+SRCS_IBS= 
+SRCS =  $(SOURCE_DIR)/libmem.cpp \
+	$(SOURCE_DIR)/libfuncs.cpp         \
+	$(SRCS_IBS)  
 
-TARGETS = libmythread.so
+INCS =  $(INCLUDE_DIR)/xdefines.h     \
+	$(INCLUDE_DIR)/xmemory.h         \
+	$(INCLUDE_DIR)/objectheader.h \
+	$(INCLUDE_DIR)/xoneheap.h     \
+	$(INCLUDE_DIR)/xpheap.h \
+	$(INCLUDE_DIR)/privateheap.h \
+	$(INCLUDE_DIR)/mm.h
 
-all:	$(TARGETS)
+INCLUDE_DIRS = -I. -I./heaplayers -I./heaplayers/util
+DEPS = $(SRCS) $(INCS)
 
-CXX = g++
+CXX = g++ -g -O2 -I$(INCLUDE_DIR) 
 
-CFLAGS64 = -m64 -msse2 -O3 -DNDEBUG -shared -fPIC -DLAZY_COMMIT -DLOCK_OWNERSHIP -DDETERM_MEMORY_ALLOC -D'CUSTOM_PREFIX(x)=grace\#\#x'
+# Detection on 32bit
+# CXX = g++ -DSSE_SUPPORT -m32 -DX86_32BIT -O3 -fno-omit-frame-pointer -DDETECT_FALSE_SHARING
+# Detection on 64bit
+#CXX = g++ -DSSE_SUPPORT -m64 -fno-omit-frame-pointer -DDETECT_FALSE_SHARING
 
-LIBS = -ldl -lpthread
 
-libmythread.so:	$(SRCS) 
-	$(CXX) $(CFLAGS64) $(INCLUDE_DIRS) $(SRCS) -o $@ $(LIBS)
+# -march=core2 -msse3 -DSSE_SUPPORT 
+#CFLAGS   = -Wall -msse3 -DSSE_SUPPORT -fno-omit-frame-pointer
+#CFLAGS   = -fno-omit-frame-pointer -DPREDICTION
+CFLAGS   = -Wno-unused-result -fno-omit-frame-pointer -DPREDICTION -DUSING_SIGUSR2
+#CFLAGS   = -Wno-unused-result -fno-omit-frame-pointer -DUSING_IBS -DPREDICTION -DUSING_SIGUSR2
+#-DOUTPUT_WORD_ACCESSES
+#CFLAGS   = -fno-omit-frame-pointer -DPREDICTION -DOUTPUT_WORD_ACCESSES
+#-DIMPROVE_PERF 
+#-DOUTPUT_WORD_ACCESSES
+#CFLAGS   = -fno-omit-frame-pointer 
+CFLAGS32 = $(CFLAGS) -m32 -DX86_32BIT # -O3
+CFLAGS64 = $(CFLAGS) #-m64 # -O3
+#CFLAGS64 = $(CFLAGS) -m64 # -O3
 
+#GET_CHARACTERISTICS
+
+TARGETS = libmem64.so
+
+all: $(TARGETS)
+
+libmem64.so: $(DEPS)
+	$(CXX) $(CFLAGS64) $(INCLUDE_DIRS) -shared -fPIC -D'CUSTOM_PREFIX(x)=mem_##x' $(SRCS) -o libmem64.so  -ldl -lpthread 
 
 clean:
 	rm -f $(TARGETS)
